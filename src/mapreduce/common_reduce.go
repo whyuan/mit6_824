@@ -1,5 +1,10 @@
 package mapreduce
 
+import (
+	"os"
+	"encoding/json"
+)
+
 func doReduce(
 	jobName string, // the name of the whole MapReduce job
 	reduceTask int, // which reduce task this is
@@ -44,4 +49,26 @@ func doReduce(
 	//
 	// Your code here (Part I).
 	//
+	kvs := make(map[string][]string)
+	for m := 0; m < nMap; m++ {
+		inputFileName := reduceName(jobName, m, reduceTask)
+		inputFile, _ := os.Open(inputFileName)
+		decoder := json.NewDecoder(inputFile)
+		for {
+			var kv KeyValue
+			err := decoder.Decode(&kv)
+			if err != nil {
+				break
+			}
+			kvs[kv.Key] = append(kvs[kv.Key], kv.Value)
+		}
+		inputFile.Close()
+	}
+	// todo 并没有进行排序，是怎么通过的???????????
+	outputFile, _ := os.OpenFile(outFile, os.O_CREATE|os.O_WRONLY, 0666)
+	enc := json.NewEncoder(outputFile)
+	for key := range kvs {
+		enc.Encode(KeyValue{key, reduceF(key, kvs[key])})
+	}
+	outputFile.Close()
 }
