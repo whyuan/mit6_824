@@ -3,6 +3,7 @@ package mapreduce
 import (
 	"os"
 	"encoding/json"
+	"sort"
 )
 
 func doReduce(
@@ -64,10 +65,14 @@ func doReduce(
 		}
 		inputFile.Close()
 	}
-	// todo 并没有进行排序，是怎么通过的???????????
 	outputFile, _ := os.OpenFile(outFile, os.O_CREATE|os.O_WRONLY, 0666)
 	enc := json.NewEncoder(outputFile)
+	var keys []string
 	for key := range kvs {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	for _, key := range keys {
 		enc.Encode(KeyValue{key, reduceF(key, kvs[key])})
 	}
 	outputFile.Close()
